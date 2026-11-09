@@ -1,0 +1,313 @@
+<!doctype html>
+<!-- Code written with help from Claude Opus 5.5 (Anthropic). Art and design by Cam Garcia. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Swatch Page Maker</title>
+  <script>
+    // Apply the saved look before the page draws, so it doesn't flash.
+    try {
+      const saved = JSON.parse(localStorage.getItem("spm-look") || "{}");
+      // Dark unless this browser chose another look.
+      document.documentElement.dataset.mode = ["light", "gray", "dark"].includes(saved.mode) ? saved.mode : "dark";
+    } catch (e) {
+      document.documentElement.dataset.mode = "dark";
+    }
+  </script>
+  <link rel="stylesheet" href="style.css?v=20261108-2327">
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js" integrity="sha256-fknaaFiOJQ27i7oZDSyqirN4fMAoS9odiy+AXE33Qsk=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+  <!-- Title on the left, look buttons on the right in line with the subtitle (like Palette Lab). -->
+  <header>
+    <div>
+      <h1>Swatch Page Maker</h1>
+      <p>Pick a layout and download a print-ready swatch sheet (Excel or PDF).</p>
+    </div>
+    <div class="look">
+      <button id="help-btn" type="button" title="Tips and tricks" aria-label="Tips and tricks" aria-haspopup="dialog">?</button>
+      <span class="look-label">Theme</span>
+      <div class="seg" role="group" aria-label="Page colors">
+        <button type="button" data-mode="dark">Dark</button>
+        <button type="button" data-mode="gray">Gray</button>
+        <button type="button" data-mode="light">Light</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <!-- Reset sits beside the heading; it only works once Confirm is ticked. -->
+      <div class="panel-head">
+        <h2>Layout</h2>
+        <div class="reset-box">
+          <label class="check"><input id="reset-ok" type="checkbox" autocomplete="off"> Confirm</label>
+          <button id="reset" type="button" title="Put every setting back to the start" disabled>Reset</button>
+        </div>
+      </div>
+      <!-- Sheet details first: title and description print at the top of every page. -->
+      <div class="details">
+        <label class="details-title">Title (optional) <input id="title" type="text" maxlength="80" placeholder="e.g. Paint markers 240"></label>
+        <label class="details-desc">Description (optional) <textarea id="description" rows="1" maxlength="300" placeholder="e.g. Brand, paper, date swatched"></textarea></label>
+      </div>
+      <hr class="divider">
+      <label>Page type
+        <select id="page-type">
+          <option value="grid">Swatch grid</option>
+          <option value="strips">Palette strips</option>
+          <option value="mixing">Mixing grid (alcohol or watercolor markers)</option>
+        </select>
+      </label>
+      <!-- Quick way to a set: type words from the brand or set name. -->
+      <div id="find-row" class="find">
+        <label for="find">Find a set</label>
+        <input id="find" type="search" autocomplete="off" placeholder="Type a brand or set, e.g. copic 72 or posca 5m">
+        <div id="find-results" class="find-results" hidden></div>
+        <small class="note">Or choose Medium, Brand and Set below.</small>
+      </div>
+      <div class="row">
+        <label id="medium-row">Medium
+          <select id="medium">
+            <option value="">None (blank grid)</option>
+          </select>
+        </label>
+        <label id="brand-row" hidden>Brand
+          <select id="brand"></select>
+        </label>
+        <label id="set-row" hidden>Set
+          <select id="preset"></select>
+        </label>
+      </div>
+      <label id="legacy-row" class="check" hidden><input id="legacy-codes" type="checkbox"> Use legacy (old) color codes</label>
+      <label id="no-codes-row" class="check" hidden><input id="no-codes" type="checkbox"> Leave color codes blank (keep the set's size only)</label>
+      <div class="row">
+        <label id="total-row">Total swatches <input id="total" type="number" min="1" max="2000" value="240">
+          <small class="note">How many colors the sheet has room for.</small>
+        </label>
+        <label id="strip-colours-row" hidden>Colors per palette
+          <select id="strip-colours">
+            <option value="3">3</option><option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
+          </select>
+        </label>
+        <label id="palettes-row" hidden>Palettes
+          <input id="palettes" type="number" min="1" max="500" value="24">
+          <small id="palettes-note" class="note"></small>
+        </label>
+        <label id="mix-colours-row" hidden>Colors in grid
+          <select id="mix-colours">
+            <option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option selected>8</option>
+            <option>9</option><option>10</option><option>11</option><option>12</option>
+          </select>
+        </label>
+        <label id="pages-row">Pages
+          <span class="pages-input">
+            <input id="pages" type="number" min="1" max="10" value="1">
+            <span id="auto-pages-row" class="check"><input id="auto-pages" type="checkbox" checked> Auto</span>
+          </span>
+          <small id="pages-note" class="note"></small>
+        </label>
+      </div>
+      <div class="row">
+        <label>Paper
+          <select id="paper">
+            <option value="letter" selected>US Letter (8.5 x 11 in)</option>
+            <option value="a4">A4</option>
+          </select>
+        </label>
+        <label>Orientation
+          <select id="orientation">
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+        </label>
+      </div>
+      <!-- Settings most people never change, folded away. -->
+      <details id="more" class="more">
+      <summary>More options</summary>
+      <label>Swatch position
+        <select id="align">
+          <option value="left">Left</option>
+          <option value="center" selected>Center</option>
+          <option value="right">Right</option>
+        </select>
+        <small class="note">Where the swatches sit on the page.</small>
+      </label>
+      <div id="grid-only">
+      <label class="check"><input id="headers" type="checkbox"> Group headers
+        <small class="note">A title row above each group, e.g. the set or color family name.</small></label>
+      <label class="check"><input id="spares" type="checkbox" checked> Spare blank swatches
+        <small class="note">Extra empty boxes that fill out the last group, for new colors later.</small></label>
+      <label>Swatch spacing
+        <select id="spacing">
+          <option value="none">None (swatches touch)</option>
+          <option value="small">Small gap</option>
+          <option value="large">Large gap</option>
+        </select>
+      </label>
+      <label>Boxes per swatch
+        <select id="sections">
+          <option value="1">1 (one box)</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+        <small class="note">Split each swatch into boxes, e.g. one for a light layer and one for a heavy layer.</small>
+      </label>
+      </div>
+      <div class="row label-style">
+        <span>Label style</span>
+        <label class="check"><input id="label-bold" type="checkbox"> <b>Bold</b></label>
+        <label class="check"><input id="label-italic" type="checkbox"> <i>Italic</i></label>
+        <label class="check">Size
+          <select id="label-size">
+            <option value="8">Small</option>
+            <option value="10" selected>Normal</option>
+            <option value="11">Large</option>
+          </select>
+        </label>
+        <label class="check">Color <input id="label-color" type="color" value="#808080"></label>
+      </div>
+      <small class="note">Label style is for the color codes printed beside each swatch.</small>
+      </details>
+      <div id="layout-pick">
+        <h3>Pick a layout</h3>
+        <p class="note">Each option splits your swatches into groups. Best fit on the paper is first.</p>
+        <div id="options" class="options"></div>
+      </div>
+      <p id="page-type-note" class="note" hidden></p>
+      <hr class="divider">
+      <div class="buttons">
+        <button id="download">Download .xlsx</button>
+        <button id="download-pdf">Download PDF</button>
+      </div>
+    </section>
+
+    <section class="panel preview-panel">
+      <h2>Preview</h2>
+      <p id="summary" class="summary"></p>
+      <p id="color-note" class="note" hidden>Colors are approximate and show only here. Downloads stay blank for your own swatches.</p>
+      <div id="preview"></div>
+    </section>
+  </main>
+
+  <footer>
+    A free tool by <a href="https://camchromatic.com">Cam Garcia</a>.
+    Your files stay on your computer.
+    Like what I do? <a href="https://ko-fi.com/camchromatic" target="_blank" rel="noopener">Support me on Ko-Fi</a>.
+    <a href="https://github.com/camchromatic/swatch-page-maker">View the code</a>.
+  </footer>
+
+  <!-- Tips and tricks, opened by the "?" button (like Palette Lab). -->
+  <dialog id="help" aria-labelledby="help-title">
+    <div class="help-head">
+      <h2 id="help-title">Tips and tricks</h2>
+      <button id="help-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="help-grid">
+      <section>
+        <h3>Start</h3>
+        <ul>
+          <li><b>Find a set:</b> type a few words, like <i>copic 72</i> or <i>posca 5m</i>. Press <kbd>Enter</kbd> to take the first match.</li>
+          <li>Or choose <b>Medium</b>, then <b>Brand</b>, then <b>Set</b>. The sheet fills with the set's color codes, in number order.</li>
+          <li>Leave Medium on <b>None</b> for a blank grid, then type how many swatches you need.</li>
+          <li>Typing a new total switches the set off, so the sheet goes blank.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Set options</h3>
+        <ul>
+          <li><b>Leave color codes blank</b> keeps the set's size but prints empty labels, for writing your own.</li>
+          <li>Ohuhu markers can use their <b>legacy (old) codes</b>, if your pens are older.</li>
+          <li>Sets made of smaller sets (like Karin) get a header with each set's name.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Layout and pages</h3>
+        <ul>
+          <li><b>Auto</b> uses the fewest pages that still print at a good size. Untick it to choose up to 10 pages.</li>
+          <li><b>Pick a layout</b> lists ways to split your swatches into groups. The best fit is first.</li>
+          <li><b>Spare blank swatches</b> fill out the last group, with room for new colors later.</li>
+          <li>Under <b>More options</b>: group headers, spacing, boxes per swatch, label style and where the swatches sit.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Download and print</h3>
+        <ul>
+          <li>The <b>title</b> and <b>description</b> print at the top of every page. The title also names the file.</li>
+          <li><b>Excel</b> opens in Excel and Google Sheets, so you can type in it. <b>PDF</b> is ready to print.</li>
+          <li>When printing the PDF, choose <b>Actual size</b> (not "Fit"), and match the paper to the one in your printer.</li>
+          <li>The preview shows each page as it will print.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Other page types</h3>
+        <ul>
+          <li><b>Palette strips:</b> rows of 3 to 6 colors, each with a name box and code boxes.</li>
+          <li><b>Mixing grid:</b> write your colors down the side and across the top. Each box is where two colors meet.</li>
+          <li>Both are blank, so they work with any brand.</li>
+        </ul>
+      </section>
+      <section>
+        <h3>Good to know</h3>
+        <ul>
+          <li>Everything runs in your browser. Nothing is uploaded, there's no sign-in, and no AI is used.</li>
+          <li><b>Reset</b> (top of Layout) puts every setting back to the start: tick <b>Confirm</b> first. Your theme stays.</li>
+          <li>Most brand sets show approximate colors in the preview. Downloads stay blank for your own swatches.</li>
+          <li>Your <b>Theme</b> choice is remembered in this browser.</li>
+        </ul>
+      </section>
+    </div>
+  </dialog>
+
+  <script src="presets.js?v=20261108-2327"></script>
+  <script src="presets-copic.js?v=20261108-2327"></script>
+  <script src="presets-ohuhu.js?v=20261108-2327"></script>
+  <script src="presets-sharpie.js?v=20261108-2327"></script>
+  <script src="presets-posca.js?v=20261108-2327"></script>
+  <script src="presets-ohuhu-other.js?v=20261108-2327"></script>
+  <script src="presets-enmy.js?v=20261108-2327"></script>
+  <script src="presets-faber-pencils.js?v=20261108-2327"></script>
+  <script src="presets-arrtx.js?v=20261108-2327"></script>
+  <script src="presets-artistro.js?v=20261108-2327"></script>
+  <script src="presets-faber-pens.js?v=20261108-2327"></script>
+  <script src="presets-blick.js?v=20261108-2327"></script>
+  <script src="presets-masters-touch.js?v=20261108-2327"></script>
+  <script src="presets-artists-loft.js?v=20261108-2327"></script>
+  <script src="presets-winsor-newton.js?v=20261108-2327"></script>
+  <script src="presets-olo.js?v=20261108-2327"></script>
+  <script src="presets-chameleon.js?v=20261108-2327"></script>
+  <script src="presets-wn-watercolor.js?v=20261108-2327"></script>
+  <script src="presets-qor.js?v=20261108-2327"></script>
+  <script src="presets-prima.js?v=20261108-2327"></script>
+  <script src="presets-daniel-smith.js?v=20261108-2327"></script>
+  <script src="presets-karin.js?v=20261108-2327"></script>
+  <script src="presets-prismacolor.js?v=20261108-2327"></script>
+  <script src="presets-prismacolor-pencils.js?v=20261108-2327"></script>
+  <script src="presets-polychromos.js?v=20261108-2327"></script>
+  <script src="presets-pitt-brush.js?v=20261108-2327"></script>
+  <script src="presets-kuretake.js?v=20261108-2327"></script>
+  <script src="presets-mildliner.js?v=20261108-2327"></script>
+  <script src="presets-karin-markers.js?v=20261108-2327"></script>
+  <script src="presets-collections.js?v=20261108-2327"></script>
+  <script src="colors-copic.js?v=20261108-2327"></script>
+  <script src="colors-ohuhu.js?v=20261108-2327"></script>
+  <script src="colors-faber.js?v=20261108-2327"></script>
+  <script src="colors-karin.js?v=20261108-2327"></script>
+  <script src="colors-posca.js?v=20261108-2327"></script>
+  <script src="colors-kuretake.js?v=20261108-2327"></script>
+  <script src="colors-acrea.js?v=20261108-2327"></script>
+  <script src="colors-arrtx.js?v=20261108-2327"></script>
+  <script src="colors-olo.js?v=20261108-2327"></script>
+  <script src="colors-winsor-newton.js?v=20261108-2327"></script>
+  <script src="colors-blick.js?v=20261108-2327"></script>
+  <script src="colors-masters-touch.js?v=20261108-2327"></script>
+  <script src="colors-artists-loft.js?v=20261108-2327"></script>
+  <script src="colors-chameleon.js?v=20261108-2327"></script>
+  <script src="colors-prismacolor.js?v=20261108-2327"></script>
+  <script src="colors-polychromos.js?v=20261108-2327"></script>
+  <script src="app.js?v=20261108-2327"></script>
+</body>
+</html>

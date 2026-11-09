@@ -1,0 +1,214 @@
+/* Colors copied from Palette Lab: Procreate's neutral grays and blue.
+   Every font is Arial, like the Excel file. */
+/* Light colors */
+:root {
+  --bg: #e4e4e6;
+  --card: #f8f8f8;
+  --field: #e4e4e6;
+  --text: #1c1c1e;
+  --muted: #6c6c70;
+  --hint: #636366; /* hint text in boxes: a touch darker than muted, readable on the gray boxes */
+  --line: #d1d1d6;
+  --warn: #d6342c;
+  --accent: #0a7cff;
+  --accent-soft: #dcebff;
+  --on-accent: #ffffff;
+  --font-display: Arial, Helvetica, sans-serif;
+  --font-body: Arial, Helvetica, sans-serif;
+  color-scheme: light;
+}
+/* Gray colors: neutral mid-gray between light and dark */
+:root[data-mode="gray"] {
+  --bg: #4a4a4d;
+  --card: #575759;
+  --field: #4a4a4d;
+  --text: #f4f4f5;
+  --muted: #d0d0d4;
+  --hint: #d0d0d4;
+  --line: #6c6c70;
+  --warn: #ffc2bb;
+  --accent: #2f8cff;
+  --accent-soft: #3d4f66;
+  --on-accent: #ffffff;
+  color-scheme: dark;
+}
+
+/* Dark colors */
+:root[data-mode="dark"] {
+  --bg: #111111;
+  --card: #1f1f1f;
+  --field: #111111;
+  --text: #f2f2f2;
+  --muted: #9a9a9e;
+  --hint: #9a9a9e;
+  --line: #363636;
+  --warn: #ff5f57;
+  --accent: #2f8cff;
+  --accent-soft: #1a2c44;
+  --on-accent: #ffffff;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.4;
+}
+
+/* Theme switch: small, on the right of the header, in line with the subtitle */
+.look { display: flex; gap: 8px; align-items: center; }
+/* "?" button and its tips box (like Palette Lab). */
+#help-btn {
+  width: 26px; height: 26px; padding: 0; border-radius: 50%; margin-right: 6px; flex: none;
+  font-weight: 700; font-size: 13px; background: var(--card); color: var(--text); border: 1px solid var(--line);
+}
+#help {
+  width: min(900px, calc(100% - 32px)); max-height: calc(100vh - 32px); padding: 16px 22px 20px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--card); color: var(--text);
+}
+#help::backdrop { background: rgb(0 0 0 / .45); }
+.help-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.help-head h2 { margin: 0; font: 700 18px var(--font-display); }
+#help-close { width: 30px; height: 30px; padding: 0; background: var(--field); color: var(--text); border: 1px solid var(--line); }
+.help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px 26px; }
+.help-grid h3 { margin: 0 0 5px; font: 700 11px var(--font-body); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.help-grid ul { margin: 0; padding-left: 16px; font-size: 13px; line-height: 1.42; }
+.help-grid li + li { margin-top: 3px; }
+.help-grid kbd { font: 11px var(--font-body); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--field); }
+.look-label { font: 500 11px/1 var(--font-body); text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button {
+  background: var(--card); color: var(--text); border-radius: 0;
+  padding: 6px 12px; font-size: 0.85rem;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { background: var(--text); color: var(--bg); }
+
+header {
+  padding: 24px 16px 8px; max-width: 1400px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px;
+}
+header h1 { margin: 0 0 4px; font: 700 2rem/1.1 var(--font-display); letter-spacing: -0.02em; }
+header p { margin: 0; color: var(--muted); }
+
+footer { max-width: 1400px; margin: 0 auto; padding: 8px 16px 24px; font-size: 0.85rem; color: var(--muted); text-align: center; }
+footer a { color: inherit; text-decoration: underline; }
+footer a:hover { color: var(--text); }
+
+/* Half and half: settings on the left, preview on the right (stacked on narrow screens). */
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (min-width: 900px) {
+  main { grid-template-columns: 1fr 1fr; }
+  /* Keep the preview in view while scrolling the settings. */
+  .preview-panel { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto; }
+}
+
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.panel.wide { grid-column: 1 / -1; }
+.panel h2 { margin: 0 0 12px; font: 700 1.2rem/1.2 var(--font-display); }
+
+label { display: block; margin-bottom: 10px; font-size: 0.9rem; }
+input[type=number], input[type=text], select, textarea {
+  display: block; width: 100%; margin-top: 4px; padding: 6px; font: inherit;
+  background: var(--field); color: var(--text); border: 1px solid var(--line); border-radius: 5px;
+}
+textarea { resize: vertical; }
+/* Hint text in empty boxes: the theme's muted color (the browser's own gray vanished on Gray). */
+::placeholder { color: var(--hint); opacity: 1; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.row label { flex: 1 1 120px; }
+.check { display: flex; gap: 8px; align-items: center; }
+.label-style { align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
+.label-style label { flex: 0 0 auto; margin-bottom: 0; }
+.label-style select { display: inline-block; width: auto; margin-top: 0; padding: 3px 6px; }
+.label-style input[type=color] { width: 32px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; }
+input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
+
+.panel h3 { margin: 14px 0 2px; font: 700 1.05rem/1.2 var(--font-display); }
+.options { display: grid; gap: 6px; }
+.option {
+  display: flex; gap: 10px; align-items: center; margin: 0;
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; cursor: pointer;
+}
+.option:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.option small { color: var(--muted); display: block; }
+
+.note { color: var(--muted); font-size: 0.85rem; margin: 6px 0; }
+.note.warn { color: var(--warn); }
+
+button {
+  background: var(--accent); color: var(--on-accent); border: 0; border-radius: 6px;
+  padding: 10px 18px; font: inherit; cursor: pointer;
+}
+button:hover { filter: brightness(1.1); }
+.buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+/* Layout heading with Reset on the right; Reset is plain and stays off until Confirm is ticked. */
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.panel-head h2 { margin: 0; }
+.reset-box { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+.reset-box .check { margin: 0; }
+#reset { padding: 6px 14px; font-size: 0.85rem; background: var(--field); color: var(--text); border: 1px solid var(--line); }
+#reset:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+/* Pages: number box with an "Auto" tick beside it. */
+.pages-input { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.pages-input input[type=number] { margin-top: 0; flex: 1; }
+.pages-input input[type=number]:disabled { opacity: 0.7; }
+#pages-note, #palettes-note { display: block; margin: 2px 0 0; }
+/* One-line hints under a setting; under a tick box they line up with its text. */
+label > .note { display: block; margin: 2px 0 0; }
+.check { flex-wrap: wrap; }
+.check > .note { flex-basis: 100%; margin: -4px 0 0 26px; }
+/* "More options": the settings most people never change. */
+.more { margin: 4px 0 10px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+.more summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+.more[open] summary { margin-bottom: 10px; }
+/* "Find a set": a box with a list of matches under it. */
+.find { position: relative; margin-bottom: 10px; font-size: 0.9rem; }
+.find label { margin-bottom: 0; }
+.find input {
+  display: block; width: 100%; margin-top: 4px; padding: 6px; font: inherit;
+  background: var(--field); color: var(--text); border: 1px solid var(--line); border-radius: 5px;
+}
+.find > .note { margin: 2px 0 0; }
+.find-results {
+  position: absolute; left: 0; right: 0; z-index: 5; margin-top: 2px; max-height: 320px; overflow: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+.find-results button {
+  display: block; width: 100%; text-align: left; background: none; color: var(--text);
+  border-radius: 0; padding: 7px 10px; border-bottom: 1px solid var(--line);
+}
+.find-results button:hover { background: var(--accent-soft); filter: none; }
+.find-results small { display: block; color: var(--muted); font-size: 0.78rem; }
+.find-results .note { padding: 6px 10px; margin: 0; }
+/* What the download will be, above the preview. */
+.summary { margin: -6px 0 10px; font-size: 0.9rem; color: var(--muted); }
+/* Sheet details: one thin row of title and description (wraps on phones). */
+.details { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.details label { margin-bottom: 0; }
+.details-title { flex: 1 1 200px; }
+.details-desc { flex: 2 1 260px; }
+.details-desc textarea { min-height: 34px; }
+.divider { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+
+/* Preview: one picture per printed page, the whole sheet of paper (white in every theme). */
+#preview { overflow-x: auto; }
+.page { margin-bottom: 18px; }
+.page-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
+.paper {
+  display: block; width: 100%; max-width: 640px; height: auto;
+  background: #fff; border: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
